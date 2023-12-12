@@ -26,6 +26,7 @@ function Create() {
         uploadAndCreate(nft)
             .then(itemId => {
                 setMessage("NFT created successfully!");
+                console.log(itemId);
                 //window.location.href= "/details/" + itemId;
             })
             .catch(err => setMessage(err.message));
