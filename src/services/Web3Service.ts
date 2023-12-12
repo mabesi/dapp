@@ -14,6 +14,16 @@ export type NewNFT = {
     image?: File;
 }
 
+export type NFT = {
+    tokenId: number;
+    price: bigint | string;
+    seller: string;
+    owner: string;
+    image: string;
+    name: string;
+    description: string;
+}
+
 type Metadata = {
     name?: string;
     description?: string;
@@ -63,6 +73,31 @@ async function getProvider() {
     if (!instance) throw new Error("No wallet found or allowed");
 
     return new ethers.BrowserProvider(instance);
+}
+
+export async function loadDetails(itemId: number) : Promise<NFT> {
+    
+    const provider = await getProvider();
+    
+    const marketContract = new ethers.Contract(MARKETPLACE_ADDRESS, NFTMarketABI, provider);
+    const collectionContract = new ethers.Contract(COLLECTION_ADDRESS, NFTCollectionABI, provider);
+
+    const item = await marketContract.marketItems(itemId);
+    if (!item) return {} as NFT;
+
+    const tokenUri = await collectionContract.tokenURI(item.tokenId);
+    const metadata = await axios.get(tokenUri.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/"));
+    const price = ethers.formatUnits(item.price.toString(), "ether");
+    
+    return {
+        price,
+        tokenId: item.tokenId,
+        seller: item.seller,
+        owner: item.owner,
+        image: metadata.data.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/"),
+        name: metadata.data.name,
+        description: metadata.data.description,
+    };
 }
 
 async function createItem(url: string, price: string) : Promise<number> {
